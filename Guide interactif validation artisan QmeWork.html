@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Guide Entretien Artisan QemWork</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .score-btn.selected { background: #312e81 !important; color: #fff !important; }
+    .score-btn:hover { background: #6366f1; color: #fff; }
+    .elim { color: #c81e1e; font-weight: bold; }
+    textarea:read-only { background: #f9fafb; }
+    .crit-view {display: none;}
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 px-2 sm:px-4 py-8">
+
+  <!-- Logo QemWork centré, affichage direct depuis Google Drive -->
+  <div class="flex justify-center mb-6">
+    <img 
+      src="https://i.postimg.cc/gjbRFYGj/Logo-revisit.jpg" 
+      alt="Logo QemWork" 
+      class="h-24 w-auto md:h-28" style="max-width:160px;">
+  </div>
+  
+  <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-md px-2 sm:px-8 py-6">
+    <h1 class="text-2xl sm:text-3xl font-bold mb-2">
+      Guide d’entretien Artisan QemWork
+    </h1>
+    <p class="italic text-gray-700 mb-4 text-sm">
+      Entrez le prénom et nom du candidat puis réalisez l'évaluation interactive.<br>
+      Scores minimums et <span class="elim">questions éliminatoires</span> sont indiqués.<br>
+      <span class="font-semibold text-indigo-600">Un bouton "Envoyer résultats" permet un mail synthétique automatique à support@qemwork.com.<br>
+      Pour un nouvel entretien, cliquez sur "Réinitialiser".</span>
+    </p>
+    <hr class="mb-6">
+
+    <!-- Bloc critères et éliminatoires -->
+    <div class="mb-8 p-5 border-2 border-red-200 rounded-lg bg-red-50">
+      <div class="mb-2 flex items-center">
+        <span class="text-lg font-bold text-red-700 mr-2">Critères d’évaluation &amp; questions éliminatoires</span>
+        <span class="bg-red-200 text-red-700 text-xs px-2 py-1 rounded">Important</span>
+      </div>
+      <ul class="mb-2 pl-5 list-disc text-base">
+        <li>
+          La majorité des questions sont notées de 0 à la valeur maximale indiquée (<span class="font-semibold">"barème"</span>), selon des critères détaillés.
+        </li>
+        <li>
+          <span class="elim">Question éliminatoire (<b>*</b>)</span> : <span class="text-gray-800">Un score de <b>0</b> à ces questions entraîne l'arrêt immédiat de l'entretien, sans admission possible.</span>
+        </li>
+        <li>
+          Le détail des critères de score <span class="text-indigo-700">est accessible pour chaque question – passez la souris sur "<b>Voir critères détaillés</b>"</span>.
+        </li>
+      </ul>
+      <div class="mt-2 mb-1 text-sm text-red-700 font-semibold">
+        Liste des questions éliminatoires :
+      </div>
+      <ul class="pl-5 mb-1 list-disc text-sm text-gray-800">
+        <li>
+          <span class="font-semibold">Présentation (nom, spécialité, localité, expérience) *</span> :
+          <span>0 = Éliminatoire en cas de contradiction ou incohérence.</span>
+        </li>
+        <li>
+          <span class="font-semibold">Diplômes, formations, apprentissages, certifications *</span> :
+          <span>0 = Éliminatoire en cas d'incohérence ou justificatif impossible.</span>
+        </li>
+        <li>
+          <span class="font-semibold">Zone d’intervention (conformité) *</span> :
+          <span>0 = Éliminatoire si la zone annoncée ne correspond pas à l’inscription ou refus de flexibilité.</span>
+        </li>
+      </ul>
+    </div>
+    <!-- Fin du bloc critères -->
+
+    <form id="evalForm" onsubmit="return false;">
+      <div class="mb-8 flex flex-col md:flex-row gap-4 items-start md:items-end">
+        <div>
+          <label class="block font-semibold mb-1 text-indigo-900" for="prenomCand">Prénom du candidat :</label>
+          <input type="text" id="prenomCand" name="prenomCand" class="p-2 border rounded w-full min-w-[180px] text-base" required autocomplete="off">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1 text-indigo-900" for="nomCand">Nom du candidat :</label>
+          <input type="text" id="nomCand" name="nomCand" class="p-2 border rounded w-full min-w-[180px] text-base" required autocomplete="off">
+        </div>
+      </div>
+
+      <div id="quiz-area"></div>
+
+      <div class="mt-12 p-5 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+        <label for="commentaire-recruteur" class="block font-semibold text-indigo-900 mb-2 text-lg">
+          Commentaires du recruteur / Observations finales :
+        </label>
+        <textarea id="commentaire-recruteur" rows="6" class="w-full p-3 border rounded focus:outline-indigo-400 font-mono text-base text-gray-900" placeholder="Avis, conformité, qualités ou points éliminatoires..."></textarea>
+      </div>
+
+      <div id="result" class="mt-8 text-lg font-bold"></div>
+
+      <div class="flex flex-row flex-wrap mt-8 mb-10 gap-6">
+        <button type="button" onclick="envoyerResultats()" class="px-8 py-3 bg-indigo-700 text-white font-semibold rounded-lg shadow hover:bg-indigo-900 transition">
+          Envoyer résultats à QemWork
+        </button>
+        <button type="button" onclick="resetFormulaire()" class="px-8 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow border hover:bg-gray-300 transition">
+          Réinitialiser le formulaire pour un nouvel entretien
+        </button>
+      </div>
+      <div id="emailInfo" class="mt-4 text-green-700 font-semibold"></div>
+    </form>
+  </div>
+  <script>
+    // (script JS inchangé, copié tel que dans tes versions précédentes)
+    const guide = [
+      {
+        titre: "1. Accueil et cadrage temps (1 min)",
+        seuil: 2, max: 2, seuilTxt: "2/2 requis",
+        questions: [
+          {
+            label: "Réponse à la présentation et disponibilité",
+            barreme: 2, elim: false,
+            criteres: [
+              "<b>2 pts</b> : Réponse claire, immédiate, polie.",
+              "<b>1 pt</b> : Hésitation ou demande à reporter, mais reste poli.",
+              "<b>0 pt</b> : Réticence, indisponibilité flagrante, impolitesse."
+            ]
+          }
+        ]
+      },
+      {
+        titre: "2. Présentation rapide et compétences (3-4 min)",
+        seuil: 6, max: 8, seuilTxt: "6/8 requis",
+        questions: [
+          {
+            label: 'Présentation (nom, spécialité, localité, expérience) <span class="elim">*</span>',
+            barreme: 2, elim: true,
+            criteres: [
+              '<b>2 pts</b> : Conforme à l’inscription, clair.',
+              '<b>1 pt</b> : Partiel ou imprécis sans contradiction.',
+              '<b>0 pt</b> <span class="elim">(ÉLIMINATOIRE)</span> : Contradiction ou incohérence (entretien arrêté).'
+            ]
+          },
+          {
+            label: 'Diplômes, formations, apprentissages, certifications <span class="elim">*</span>',
+            barreme: 2, elim: true,
+            criteres: [
+              '<b>2 pts</b> : Cohérent, conforme, années précises.',
+              '<b>1 pt</b> : Infos incomplètes ou hésitantes mais compatibles.',
+              '<b>0 pt</b> <span class="elim">(ÉLIMINATOIRE)</span> : Contradiction/justificatif impossible (stop).'
+            ]
+          },
+          {
+            label: 'Fourniture des justificatifs',
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Disponible, volontaire.',
+              '<b>1 pt</b> : Hésitation, justification vague.',
+              '<b>0 pt</b> : Refus ou évasif.'
+            ]
+          },
+          {
+            label: "Référence réelle + exemple client",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Référence crédible et exemple concret.',
+              '<b>1 pt</b> : Référence ou exemple flou.',
+              '<b>0 pt</b> : Aucune référence/testation réelle.'
+            ]
+          }
+        ]
+      },
+      {
+        titre: "3. Valeurs & organisation quotidienne (3 min)",
+        seuil: 8, max: 10, seuilTxt: "8/10 requis",
+        questions: [
+          {
+            label: "3 valeurs professionnelles clés",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Valeurs précises, adaptées.',
+              '<b>1 pt</b> : Valeurs floues/générales.',
+              '<b>0 pt</b> : Aucune valeur pertinente.'
+            ]
+          },
+          {
+            label: "Exemple concret d'application des valeurs",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Situation réelle, convaincante.',
+              '<b>1 pt</b> : Situation floue/superficielle.',
+              '<b>0 pt</b> : Aucun exemple.'
+            ]
+          },
+          {
+            label: "Deux défauts + amélioration",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Auto-évaluation sincère, plan concret.',
+              '<b>1 pt</b> : Défauts sans solution claire.',
+              '<b>0 pt</b> : Se dit parfait ou se ferme.'
+            ]
+          },
+          {
+            label: "Situation de difficulté client",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Problème récurrent + solution adaptée.',
+              '<b>1 pt</b> : Problème cité, solution peu claire.',
+              '<b>0 pt</b> : Aucun problème/solution inadaptée.'
+            ]
+          },
+          {
+            label: 'Zone d’intervention (conformité) <span class="elim">*</span>',
+            barreme: 2, elim: true,
+            criteres: [
+              '<b>2 pts</b> : Correspond à l’inscription, flexible.',
+              '<b>1 pt</b> : Hésitation ou incertitude.',
+              '<b>0 pt</b> <span class="elim">(ÉLIMINATOIRE)</span> : Désaccord ou absence de flexibilité.'
+            ]
+          }
+        ]
+      },
+      {
+        titre: "4. Cas pratique (4-5 min)",
+        seuil: 9, max: 12, seuilTxt: "9/12 requis",
+        contexte: "« Vous avez donné un devis accepté (40 000 FCFA main d’œuvre, 30 000 FCFA matériel, délai 10 jours). Sur place, la zone est encombrée (déchets, meubles), le travail est plus complexe (délai & coût augmentent). »",
+        questions: [
+          {
+            label: "Préparer la zone",
+            barreme: 3, elim: false,
+            criteres: [
+              '<b>3 pts</b> : Nettoyage complet, protection meubles, sécurité.',
+              '<b>2 pts</b> : Préparation partielle, oublis mineurs.',
+              '<b>1 pt</b> : Réponse vague.',
+              '<b>0 pt</b> : Aucune préparation.'
+            ]
+          },
+          {
+            label: "Informer client coûts/délais",
+            barreme: 3, elim: false,
+            criteres: [
+              '<b>3 pts</b> : Dialogue avant, explication claire.',
+              '<b>2 pts</b> : Info tardive ou peu claire.',
+              '<b>1 pt</b> : Info mais sans accord.',
+              '<b>0 pt</b> : Continue sans prévenir.'
+            ]
+          },
+          {
+            label: "Si client refuse le surcoût",
+            barreme: 3, elim: false,
+            criteres: [
+              '<b>3 pts</b> : Dialogue apaisé, pédagogie, compromis.',
+              '<b>2 pts</b> : Tente de convaincre sans solution.',
+              '<b>1 pt</b> : Dialogue faible.',
+              '<b>0 pt</b> : Imposant/conflit.'
+            ]
+          },
+          {
+            label: "Matériel inconnu/moindre coût",
+            barreme: 3, elim: false,
+            criteres: [
+              '<b>3 pts</b> : Refuse l’inconnu, explique pourquoi.',
+              '<b>2 pts</b> : Hésite, mais préfère la qualité.',
+              '<b>1 pt</b> : Accepte sans analyse.',
+              '<b>0 pt</b> : Prend toujours le moins cher.'
+            ]
+          }
+        ]
+      },
+      {
+        titre: "5. Motivation & engagement (2-3 min)",
+        seuil: 7, max: 10, seuilTxt: "7/10 requis",
+        questions: [
+          {
+            label: "Pourquoi QemWork ?",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Motivation authentique.',
+              '<b>1 pt</b> : Motivation faible.',
+              '<b>0 pt</b> : Aucune motivation.'
+            ]
+          },
+          {
+            label: "Priorité clients QemWork ?",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Engagement total.',
+              '<b>1 pt</b> : Engagement mitigé.',
+              '<b>0 pt</b> : Refus.'
+            ]
+          },
+          {
+            label: "Adhésion aux valeurs QemWork ?",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Adhésion sans réserve.',
+              '<b>1 pt</b> : Acceptation tiède.',
+              '<b>0 pt</b> : Refus ou doute.'
+            ]
+          },
+          {
+            label: "Acceptation règles/formation ?",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Participation claire.',
+              '<b>1 pt</b> : Attention mitigée.',
+              '<b>0 pt</b> : Refus.'
+            ]
+          },
+          {
+            label: "Respect délais & réactivité",
+            barreme: 2, elim: false,
+            criteres: [
+              '<b>2 pts</b> : Engagement fiable.',
+              '<b>1 pt</b> : Engagement mitigé.',
+              '<b>0 pt</b> : Aucun engagement réel.'
+            ]
+          }
+        ]
+      }
+    ];
+
+    let scores = guide.map(sec=> Array(sec.questions.length).fill(null));
+    function resetFormulaire() {
+      scores = guide.map(sec=> Array(sec.questions.length).fill(null));
+      document.getElementById("prenomCand").value = "";
+      document.getElementById("nomCand").value = "";
+      document.getElementById("commentaire-recruteur").value = "";
+      document.querySelectorAll(".score-btn.selected").forEach(btn => btn.classList.remove("selected"));
+      guide.forEach((section, si) => {
+        const scoreSec = document.getElementById("score_sec"+si);
+        if(scoreSec) scoreSec.innerText = "0";
+      });
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("emailInfo").innerHTML = "";
+    }
+    function setScore(sec, q, val) {
+      scores[sec][q] = Number(val);
+      document.querySelectorAll(`[data-q="${globalQIndex(sec, q)}"]`).forEach(btn=>{
+        btn.classList.remove("selected");
+        if(Number(btn.dataset.val)===val) btn.classList.add("selected");
+      });
+      updateScores();
+    }
+    function globalQIndex(sec, q) {
+      let idx=0;
+      for(let i=0;i<sec;i++) idx+=guide[i].questions.length;
+      return idx+q;
+    }
+    function updateScores() {
+      let htmlResult = "";
+      let total=0, totalMax=0, ok=true, eliminer=false, sectionDetails = [];
+      guide.forEach((section, si) => {
+        let secTot = 0;
+        let secMax = section.max;
+        for(let qi=0; qi<scores[si].length; qi++) {
+          if(scores[si][qi] !== null) secTot += scores[si][qi];
+          if(section.questions[qi].elim && Number(scores[si][qi]) === 0) eliminer = true;
+        }
+        total += secTot; totalMax += secMax;
+        const scoreEl = document.getElementById("score_sec"+si);
+        if (scoreEl) scoreEl.innerText = secTot;
+        if(secTot < section.seuil) ok = false;
+        sectionDetails.push(`${section.titre.split('.')[0]}. ${section.titre.split('.').slice(1).join('.').split('(')[0].trim()}: ${secTot}/${secMax}`);
+      });
+
+      if(scores.flat().some(x=>x===null)) {
+        htmlResult = `<span class="text-gray-600 text-base">Complétez toutes les notes pour obtenir le résultat global.</span>`;
+      } else if(eliminer) {
+        htmlResult = `<span class="text-red-700">Échec : au moins une question éliminatoire à 0.</span> <br>
+          <span class="text-gray-700">Détail : ${sectionDetails.join(', ')}</span>`;
+      } else if(ok) {
+        htmlResult = `<span class="text-green-700">Réussi : tous les seuils atteints ! (${total}/${totalMax})</span> 
+          <br><span class="text-gray-700">Détail : ${sectionDetails.join(', ')}</span>`;
+      } else {
+        htmlResult = `<span class="text-orange-700">Attention : seuil non atteint dans au moins une partie.</span> 
+          <br><span class="text-gray-700">Détail : ${sectionDetails.join(', ')}</span>`;
+      }
+      document.getElementById("result").innerHTML = htmlResult;
+    }
+    function envoyerResultats() {
+      const prenom = document.getElementById("prenomCand").value.trim();
+      const nom = document.getElementById("nomCand").value.trim();
+      const commentaire = document.getElementById("commentaire-recruteur").value.trim();
+      let total=0, totalMax=0, eliminer=false, ok=true, sectionScores = [];
+      guide.forEach((section, si) => {
+        let secTot = 0;
+        section.questions.forEach((q, qi) => {
+          const val = scores[si][qi];
+          if(q.elim && Number(val) === 0) eliminer = true;
+          if(val !== null) secTot += val;
+        });
+        if(secTot < section.seuil) ok = false;
+        total += secTot; totalMax += section.max;
+        sectionScores.push(`${section.titre.split('.')[0]}. ${section.titre.split('.').slice(1).join('.').split('(')[0].trim()} : ${secTot}/${section.max}`);
+      });
+      let statutTxt = "";
+      if(scores.flat().some(x=>x===null)) {
+        statutTxt = "INCOMPLET (au moins une note manquante)";
+      } else if(eliminer) {
+        statutTxt = "ÉLIMINÉ (au moins une question éliminatoire à 0)";
+      } else if(ok) {
+        statutTxt = `RÉUSSI (${total}/${totalMax})`;
+      } else {
+        statutTxt = "ÉCHEC : seuil non atteint dans au moins une partie";
+      }
+      let corps = 
+        `Candidat : ${prenom} ${nom}%0D%0A` +
+        `Statut : ${statutTxt}%0D%0A%0D%0A` +
+        `Scores par section :%0D%0A` +
+        sectionScores.map(s=>s.replace('&','et')).join('%0D%0A') +
+        `%0D%0A%0D%0ACommentaires recruteur :%0D%0A${commentaire || "(néant)"}%0D%0A`;
+      const subject = encodeURIComponent(`Résultats entretien QemWork - ${prenom} ${nom}`);
+      const mailtoLink = `mailto:support@qemwork.com?subject=${subject}&body=${corps}`;
+      window.location.href = mailtoLink;
+      document.getElementById("emailInfo").innerText =
+        "Ouverture de votre client mail pour envoyer l'évaluation. Vérifiez le mail avant envoi.";
+    }
+    function showCritere(id) { document.getElementById(id).style.display = 'block'; }
+    function hideCritere(id) { document.getElementById(id).style.display = 'none'; }
+    function generateQuiz() {
+      let html = "";
+      let qIndex = 0;
+      guide.forEach((section, secIdx) => {
+        html += `<div class="mb-10 pb-3 border-b">
+          <div class="mb-2 flex flex-wrap items-center">
+            <span class="text-xl font-semibold">${section.titre}</span>
+            <span class="ml-4 px-3 py-1 text-indigo-700 bg-indigo-50 rounded border border-indigo-200 text-xs">
+              Score minimum requis : <b>${section.seuilTxt}</b>
+            </span>
+          </div>`;
+        if(section.contexte) {
+          html += `<div class="text-sm italic mb-2 bg-gray-50 px-3 py-2 rounded border">${section.contexte}</div>`;
+        }
+        html += `<table class="min-w-full border text-left text-sm"><thead>
+          <tr class="bg-gray-100">
+            <th class="border px-2 py-1">Questions${section.questions.some(q=>q.elim)?'<sup>*</sup>':''}</th>
+            <th class="border px-2 py-1 text-center">Barème</th>
+            <th class="border px-2 py-1 text-center">Attribuer la note</th>
+          </tr></thead><tbody>`;
+        section.questions.forEach((q, qk) => {
+          html += `<tr>
+            <td class="border px-2 py-2 font-medium text-[15px]">${q.label}
+              <div class="mt-1 mb-0 text-xs text-gray-500">
+                <button type="button" tabindex="-1"
+                    onmouseover="showCritere('${'_crit' + secIdx + '_' + qk}')"
+                    onmouseout="hideCritere('${'_crit' + secIdx + '_' + qk}')"
+                    class="underline decoration-dotted decoration-indigo-400 cursor-pointer">
+                  Voir critères détaillés
+                </button>
+                <span id="${'_crit' + secIdx + '_' + qk}" style="display:none;" class="block p-2 mt-1 mb-2 bg-gray-50 rounded border font-normal">${q.criteres.join("<br>")}</span>
+                ${q.elim ? `<span class="elim ml-2">Éliminatoire si 0</span>` : ""}
+              </div>
+            </td>
+            <td class="border px-2 py-2 text-center text-indigo-700">${q.barreme} pts${q.barreme==3?'':' max'}</td>
+            <td class="border px-2 py-2 text-center">
+              <div class="inline-flex gap-2">`;
+          for(let i=0;i<=q.barreme;i++) {
+            html += `<button type="button" class="px-3 py-1 border rounded score-btn bg-gray-100"
+                      data-q="${qIndex}" data-val="${i}" onclick="setScore(${secIdx},${qk},${i})">${i}</button> `;
+          }
+          html += `</div>
+            </td>
+            </tr>`;
+          qIndex++;
+        });
+        html += `</tbody></table>
+        <div class="mt-2 text-right text-gray-700 font-semibold">
+          Score partie : <span id="score_sec${secIdx}">0</span> / ${section.max}
+        </div>
+        </div>`;
+      });
+      html += `<div class="text-sm text-gray-600 mt-3"><sup>*</sup> Questions comportant la mention <span class="elim">Éliminatoire</span> : tout score 0 sur ces questions entraîne l'arrêt du processus et l'échec du candidat.</div>`;
+      return html;
+    }
+    window.onload = function() {
+      document.getElementById("quiz-area").innerHTML = generateQuiz();
+      resetFormulaire();
+    };
+  </script>
+</body>
+</html>
